@@ -290,7 +290,6 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     /* Get free frame in MEMSWP */
     MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
 
-
     /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
     /* Copy victim frame to swap */
     //__swap_cp_page();
@@ -301,7 +300,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     /* Update page table */
     //pte_set_swap() &mm->pgd;
     
-    pte_set_swap(&pte, 0 , swpfpn);
+    pte_set_swap(&pte, 0 , 5);
 
     /* Update its online status of the target page */
     //pte_set_fpn() & mm->pgd[pgn];
@@ -570,7 +569,11 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   struct pgn_t *pg = mm->fifo_pgn;
 
   /* TODO: Implement the theorical mechanism to find the victim page */
+  // using FIFO algorithm
+  
+  while(pg->pg_next != NULL) pg = pg->pg_next;
 
+  *retpgn = pg->pgn;
   free(pg);
 
   return 0;
