@@ -38,14 +38,15 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
 
 #ifdef DBG
     printf("----------------------------------------------\n");
-
-  printf("The enlist has been called\n");
-  struct vm_rg_struct *it = mm->mmap->vm_freerg_list;
-  while (it != NULL)
-  {
-    printf("range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
-    it = it->rg_next;
-  }
+    printf("Detect area size: \n");
+    printf("Start = %lu, End = %lu\n",mm->mmap->vm_start, mm->mmap->vm_end);
+    printf("The enlist has been called\n");
+    struct vm_rg_struct *it = mm->mmap->vm_freerg_list;
+    while (it != NULL)
+    {
+      printf("range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
+      it = it->rg_next;
+    }
     printf("----------------------------------------------\n");
 
 #endif
@@ -102,8 +103,6 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr)
 {
   /*Allocate at the toproof */
-  
-
   struct vm_rg_struct rgnode;
 
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
@@ -111,7 +110,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
     caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
     *alloc_addr = rgnode.rg_start;
-
     #ifdef DBG 
     printf("----------------------------------------------\n");
     printf("alloc has been called when get free region\n");
@@ -131,6 +129,28 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   }
 
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
+  if( caller->mm->mmap->sbrk + size < caller->mm->mmap->vm_end){
+    caller->mm->symrgtbl[rgid].rg_start = caller->mm->mmap->sbrk;
+    caller->mm->symrgtbl[rgid].rg_end = caller->mm->mmap->sbrk + size;
+    caller->mm->mmap->sbrk += size;
+    *alloc_addr = caller->mm->symrgtbl[rgid].rg_start;
+    #ifdef DBG 
+    printf("----------------------------------------------\n");
+    printf("alloc has been called when sbrk\n");
+    printf("range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
+    printf("VM area: start = %lu, end = %lu\n", caller->mm->mmap->vm_start, caller->mm->mmap->vm_end);
+    // Checking the free region list
+    printf("The free region list: \n");
+    struct vm_rg_struct *it = caller->mm->mmap->vm_freerg_list;
+    while (it != NULL)
+    {
+      printf("range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
+      it = it->rg_next;
+    }
+    printf("----------------------------------------------\n");
+    #endif
+    return 0;
+  }
 
 
   /*Attempt to increate limit to get space */
@@ -149,25 +169,25 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /*Successful increase limit */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
+  caller->mm->mmap->sbrk = old_sbrk + size;
   *alloc_addr = old_sbrk;
 
   // Handle the last free region in the vma
-  // Case 1: last_free_rg is NULL
-  if(cur_vma->vm_freerg_list == NULL){
-    cur_vma->vm_freerg_list = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
-    cur_vma->vm_freerg_list->rg_start = caller->mm->symrgtbl[rgid].rg_end;
-    cur_vma->vm_freerg_list->rg_end = cur_vma->sbrk;
-    cur_vma->vm_freerg_list->rg_next = NULL;
-  }
-  // Case 2: last_free_rg is not NULL, we will update the start pointer and end pointer
-  else {
-    struct vm_rg_struct *last_free_rg = cur_vma->vm_freerg_list;
-    while(last_free_rg->rg_next != NULL){
-      last_free_rg = last_free_rg->rg_next;
-    }
-    last_free_rg->rg_start = caller->mm->symrgtbl[rgid].rg_end;
-    last_free_rg->rg_end = cur_vma->sbrk;
-  }
+  // Case 1: last_free_rg is NULL mean that first allocated region
+  // if(cur_vma->vm_freerg_list == NULL){
+  //   cur_vma->vm_freerg_list = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
+  //   cur_vma->vm_freerg_list->rg_start = caller->mm->symrgtbl[rgid].rg_end;
+  //   cur_vma->vm_freerg_list->rg_end = cur_vma->sbrk ;
+  //   cur_vma->vm_freerg_list->rg_next = NULL;
+  // }
+  // // Case 2: it happen when the remain has been not 
+  // else{
+  //   struct vm_rg_struct *temp = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
+  //   temp->rg_start = caller->mm->symrgtbl[rgid].rg_end;
+  //   temp->rg_end = cur_vma->sbrk;
+  //   temp->rg_next = cur_vma->vm_freerg_list;
+  //   cur_vma->vm_freerg_list = temp;
+  // }
   #ifdef DBG
     printf("----------------------------------------------\n");
 
@@ -201,18 +221,20 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   #ifdef DBG
   printf("free is called\n");
   #endif
-  if(rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
+  if(rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ){
     return -1;
-
+  }
   /* TODO: Manage the collect freed region to freerg_list */
+
+  rgnode.rg_start = caller->mm->symrgtbl[rgid].rg_start;
+  rgnode.rg_end = caller->mm->symrgtbl[rgid].rg_end;
+
   // reset the symrgtbl entry to 0 
   caller->mm->symrgtbl[rgid].rg_start = 0;
   caller->mm->symrgtbl[rgid].rg_end = 0;
 
-  rgnode.rg_start = caller->mm->symrgtbl[rgid].rg_start;
-  rgnode.rg_end = caller->mm->symrgtbl[rgid].rg_end;
-  rgnode.rg_next = NULL;
   /*enlist the obsoleted memory region */
+
   enlist_vm_freerg_list(caller->mm, rgnode);
 
   return 0;
@@ -524,8 +546,12 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 
   /* The obtained vm area (only) 
    * now will be alloc real ram region */
+  // check if start = end
+  if(cur_vma->vm_start == cur_vma->vm_end)
+  {
+    cur_vma->vm_freerg_list = NULL;
+  }
   cur_vma->vm_end += inc_sz;
-  cur_vma->sbrk += inc_sz;
   if (vm_map_ram(caller, area->rg_start, area->rg_end, 
                     old_end, incnumpage , newrg) < 0)
     return -1; /* Map the memory to MEMRAM */
