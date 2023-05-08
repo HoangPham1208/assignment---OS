@@ -36,7 +36,7 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   // update the new region
   mm->mmap->vm_freerg_list = rg;
 
-#ifdef DBG
+#ifdef VMDBG
     printf("----------------------------------------------\n");
     printf("Detect area size: \n");
     printf("Start = %lu, End = %lu\n",mm->mmap->vm_start, mm->mmap->vm_end);
@@ -110,7 +110,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
     caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
     *alloc_addr = rgnode.rg_start;
-    #ifdef DBG 
+    #ifdef VMDBG 
     printf("----------------------------------------------\n");
     printf("alloc has been called when get free region\n");
     printf("range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
@@ -134,7 +134,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     caller->mm->symrgtbl[rgid].rg_end = caller->mm->mmap->sbrk + size;
     caller->mm->mmap->sbrk += size;
     *alloc_addr = caller->mm->symrgtbl[rgid].rg_start;
-    #ifdef DBG 
+    #ifdef VMDBG 
     printf("----------------------------------------------\n");
     printf("alloc has been called when sbrk\n");
     printf("range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
@@ -188,7 +188,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   //   temp->rg_next = cur_vma->vm_freerg_list;
   //   cur_vma->vm_freerg_list = temp;
   // }
-  #ifdef DBG
+  #ifdef VMDBG
     printf("----------------------------------------------\n");
 
   printf("alloc has been called when not get free region\n");
@@ -218,7 +218,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 int __free(struct pcb_t *caller, int vmaid, int rgid)
 {
   struct vm_rg_struct rgnode;
-  #ifdef DBG
+  #ifdef VMDBG
   printf("free is called\n");
   #endif
   if(rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ){
