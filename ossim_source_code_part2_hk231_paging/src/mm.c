@@ -86,30 +86,28 @@ int vmap_page_range(struct pcb_t *caller, // process call
               struct vm_rg_struct *ret_rg)// return mapped region, the real mapped fp
 {                                         // no guarantee all given pages are mapped
   //uint32_t * pte = malloc(sizeof(uint32_t));
-  struct framephy_struct *fpit = malloc(sizeof(struct framephy_struct));
+  struct framephy_struct *fpit = frames;
   int  fpn;
   int pgit = 0;
-  int pgn = PAGING_PGN(addr);
 
   ret_rg->rg_end = ret_rg->rg_start = addr; // at least the very first space is usable
 
-  fpit->fp_next = frames;
 
   /* TODO map range of frame to address space 
    *      [addr to addr + pgnum*PAGING_PAGESZ
    *      in page table caller->mm->pgd[]
    */
   for(; pgit < pgnum; pgit++){
+    int temp = addr + pgit*PAGING_PAGESZ;
     fpn = fpit->fpn;
-    pte_set_fpn(&caller->mm->pgd[pgn+pgit], fpn);
+    pte_set_fpn(&caller->mm->pgd[PAGING_PGN(temp)], fpn);
+    enlist_pgn_node(&caller->mm->fifo_pgn, PAGING_PGN(temp));
     fpit = fpit->fp_next; 
   }
 
    /* Tracking for later page replacement activities (if needed)
     * Enqueue new usage page */
-   enlist_pgn_node(&caller->mm->fifo_pgn, pgn+pgit);
-
-
+  
   return 0;
 }
 
@@ -150,26 +148,35 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
    {  // ERROR CODE of obtaining somes but not enough frames
       /* it leaves the case of memory is enough but half in ram, half in swap
       * do the swaping all to swapper to get the all in ram */
-      // FIFO replacement
-      struct framephy_struct *fpit = *frm_lst;
-      // get the last frame in the list
-      while(fpit->fp_next != NULL)
+      /* Find victim page */
+      int vicpgn, swfpn;
+      int vicfpn;
+
+      /* Get victim frame from victim page*/
+      find_victim_page(caller->mm,&vicpgn);
+      vicfpn = PAGING_FPN(caller->mm->pgd[vicpgn]);
+
+      /* Get free frame in MEMSWP */
+      MEMPHY_get_freefp(caller->active_mswp, &swfpn);
+      /* Copy victim frame to swap */
+      __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swfpn);
+      /* Update page table */
+      pte_set_swap(&caller->mm->pgd[vicpgn], 0, swfpn);
+      /* Update frame table */
+      newfp_str = malloc(sizeof(struct framephy_struct));
+      newfp_str->owner = caller->mm;
+      if(frm_lst == NULL)
       {
-        fpit = fpit->fp_next;
+        newfp_str->fp_next = NULL;
+        newfp_str->fpn = vicfpn;
+        *frm_lst = newfp_str;
       }
-      // swap the first frame in the list to swapper
-      /*
-        swap offset between (5,25)
-        swap type between (0,4)
-        So we can use the default value of swap type = 0 and swap offset = 5
-      */
-      pte_set_swap(&caller->mm->pgd[fpit->fpn], 0, 5);
-      // get the new frame
-      MEMPHY_get_freefp(caller->mram, &fpn);
-      // update the frame list
-      fpit->fpn = fpn;
-      // update the page table entry
-      pte_set_fpn(&caller->mm->pgd[fpit->fpn], fpn);
+      else
+      {
+        newfp_str->fp_next = *frm_lst;
+        newfp_str->fpn = vicfpn;
+        *frm_lst = newfp_str;
+      }
     } 
  }
 

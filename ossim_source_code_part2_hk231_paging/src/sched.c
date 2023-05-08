@@ -57,8 +57,9 @@ struct pcb_t *get_mlq_proc(void) {
      * Remember to use lock to protect the queue.
      * */
     unsigned long prio;
-    pthread_mutex_lock(&queue_lock);
+
     /* loop through the MLQ ready queues according to the policy */
+    pthread_mutex_lock(&queue_lock);
     for (prio = 0; prio < MAX_PRIO; prio++) {
         if (!empty(&mlq_ready_queue[prio])) {    // found a non-empty queue
             if (curr_slot == MAX_PRIO - prio) {  // used up current slot
@@ -73,6 +74,7 @@ struct pcb_t *get_mlq_proc(void) {
         }
     }
     pthread_mutex_unlock(&queue_lock);
+
     return proc;
 }
 
