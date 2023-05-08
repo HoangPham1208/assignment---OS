@@ -1,0 +1,6 @@
+1 5
+calc
+alloc 50 0
+free 0
+alloc 50 1
+free 1
