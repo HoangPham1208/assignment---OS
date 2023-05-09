@@ -90,6 +90,7 @@ int run(struct pcb_t * proc) {
 	default:
 		stat = 1;
 	}
+	
 	return stat;
 
 }

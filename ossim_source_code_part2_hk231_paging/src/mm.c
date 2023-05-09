@@ -127,6 +127,12 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
   {
     if(MEMPHY_get_freefp(caller->mram, &fpn) == 0)
    {
+      //checking
+      #ifdef MMDBG
+      printf("-------------------------\n");
+      printf("we got free frame %d\n", fpn);
+      printf("-------------------------\n");
+      #endif
       newfp_str = malloc(sizeof(struct framephy_struct));
       newfp_str->owner = caller->mm;
       // case 1: no frame available
@@ -149,6 +155,11 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
       /* it leaves the case of memory is enough but half in ram, half in swap
       * do the swaping all to swapper to get the all in ram */
       /* Find victim page */
+      #ifdef MMDBG
+      printf("--------------------------\n");
+       printf("we need to swap\n");
+      printf("--------------------------\n");
+      #endif
       int vicpgn, swfpn;
       int vicfpn;
 
@@ -198,6 +209,9 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 {
   struct framephy_struct *frm_lst = NULL;
   int ret_alloc;
+  #ifdef VMDBG
+    printf("vm_map_ram: astart = %d, aend = %d, mapstart = %d, incpgnum = %d\n", astart, aend, mapstart, incpgnum);
+  #endif
 
   /*@bksysnet: author provides a feasible solution of getting frames
    *FATAL logic in here, wrong behaviour if we have not enough page

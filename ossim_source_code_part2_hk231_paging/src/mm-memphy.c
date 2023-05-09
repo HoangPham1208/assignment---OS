@@ -7,6 +7,9 @@
 #include "mm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
+
+pthread_mutex_t memphy_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  *  MEMPHY_mv_csr - move MEMPHY cursor
@@ -163,7 +166,14 @@ int MEMPHY_dump(struct memphy_struct * mp)
     /*TODO dump memphy content mp->storage 
      *     for tracing the memory content
      */
-    printf("Dumping memphy content: %s\n", mp->storage);
+   //  #ifdef VMDBG
+    printf("Dumping memphy content:\n");
+    
+    for(int i = 0; i < mp->maxsz ; i++){
+      if(mp->storage[i] != 0)
+      printf("store %d = %d\n",i,mp->storage[i]);
+    }
+   //  #endif
     return 0;
 }
 
