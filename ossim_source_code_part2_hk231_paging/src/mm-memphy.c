@@ -166,14 +166,16 @@ int MEMPHY_dump(struct memphy_struct * mp)
     /*TODO dump memphy content mp->storage 
      *     for tracing the memory content
      */
-   //  #ifdef VMDBG
-    printf("Dumping memphy content:\n");
-    
+    #ifdef TEST
+    printf("----------------------------------------\n");
+    printf("DUMPING MEMPHY CONTENT\n");
+    printf("----------------------------------------\n");
     for(int i = 0; i < mp->maxsz ; i++){
       if(mp->storage[i] != 0)
       printf("store %d = %d\n",i,mp->storage[i]);
     }
-   //  #endif
+    printf("----------------------------------------\n");
+    #endif
     return 0;
 }
 

@@ -209,9 +209,7 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
 {
   struct framephy_struct *frm_lst = NULL;
   int ret_alloc;
-  #ifdef VMDBG
-    printf("vm_map_ram: astart = %d, aend = %d, mapstart = %d, incpgnum = %d\n", astart, aend, mapstart, incpgnum);
-  #endif
+  
 
   /*@bksysnet: author provides a feasible solution of getting frames
    *FATAL logic in here, wrong behaviour if we have not enough page
@@ -321,7 +319,10 @@ int enlist_pgn_node(struct pgn_t **plist, int pgn)
 
   return 0;
 }
-
+/*
+  Print the list of frame physical
+  @ifp: head of frame physical list
+*/
 int print_list_fp(struct framephy_struct *ifp)
 {
    struct framephy_struct *fp = ifp;
@@ -338,6 +339,10 @@ int print_list_fp(struct framephy_struct *ifp)
    return 0;
 }
 
+/*
+  Print the list of range virtual
+  @irg: head of range virtual list
+*/
 int print_list_rg(struct vm_rg_struct *irg)
 {
    struct vm_rg_struct *rg = irg;
@@ -353,7 +358,10 @@ int print_list_rg(struct vm_rg_struct *irg)
    printf("\n");
    return 0;
 }
-
+/*
+  Print the VMA list
+  @ivma: head of VMA list
+*/
 int print_list_vma(struct vm_area_struct *ivma)
 {
    struct vm_area_struct *vma = ivma;
@@ -363,13 +371,17 @@ int print_list_vma(struct vm_area_struct *ivma)
    printf("\n");
    while (vma != NULL )
    {
-       printf("va[%ld->%ld]\n",vma->vm_start, vma->vm_end);
+       printf("va[%ld->%ld] - sbrk = %ld\n",vma->vm_start, vma->vm_end, vma->sbrk);
        vma = vma->vm_next;
    }
    printf("\n");
    return 0;
 }
 
+/*
+  Print the list of page number
+  @ip: head of page number list
+*/
 int print_list_pgn(struct pgn_t *ip)
 {
    printf("print_list_pgn: ");
@@ -384,6 +396,10 @@ int print_list_pgn(struct pgn_t *ip)
    return 0;
 }
 
+/*
+  Print the table of page number
+  @caller: owner of the page table
+*/
 int print_pgtbl(struct pcb_t *caller, uint32_t start, uint32_t end)
 {
   int pgn_start,pgn_end;
