@@ -10,6 +10,6 @@
 // #define MMDBG 1
 #define IODUMP 1
 #define PAGETBL_DUMP 1
-#defind TEST 1
+#define TEST 1
 
 #endif
