@@ -130,7 +130,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     #endif
     #ifdef TEST
     printf("-------------------------\n");
-    printf("ALLOC\n");
+    printf("ALLOC - size = %d\n", size);
     printf("-------------------------\n");
     printf("\n");
     // print the vma list
@@ -174,7 +174,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     #endif
     #ifdef TEST
     printf("-------------------------\n");
-    printf("ALLOC\n");
+    printf("ALLOC - size = %d\n", size);
     printf("-------------------------\n");
     printf("\n");
     // print the vma list
@@ -251,7 +251,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   #endif
   #ifdef TEST
     printf("-------------------------\n");
-    printf("ALLOC\n");
+    printf("ALLOC - size = %d\n", size);
     printf("-------------------------\n");
     printf("\n");
     // print the vma list
@@ -303,7 +303,7 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   enlist_vm_freerg_list(caller->mm, rgnode);
   #ifdef TEST
     printf("-------------------------\n");
-    printf("FREE\n");
+    printf("FREE - range id %d:[%lu, %lu]\n", rgid, rgnode.rg_start, rgnode.rg_end);
     printf("-------------------------\n");
     printf("\n");
     // print the vma list
