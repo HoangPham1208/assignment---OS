@@ -149,6 +149,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
         newfp_str->fpn = fpn;
         *frm_lst = newfp_str;
       }
+      MEMPHY_put_fp(caller->mram, fpn);
    } 
    else 
    {  // ERROR CODE of obtaining somes but not enough frames
@@ -188,6 +189,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
         newfp_str->fpn = vicfpn;
         *frm_lst = newfp_str;
       }
+      MEMPHY_put_fp(caller->mram, vicfpn);
     } 
  }
 

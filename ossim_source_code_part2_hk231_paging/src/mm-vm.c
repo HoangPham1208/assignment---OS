@@ -39,6 +39,7 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   /* Enlist the new region */
   // update the new region
   mm->mmap->vm_freerg_list = rg;
+  // put frame to the free list
 
 #ifdef VMDBG
     printf("----------------------------------------------\n");

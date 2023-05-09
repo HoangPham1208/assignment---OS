@@ -211,4 +211,17 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
    return 0;
 }
 
+int MEMPHY_put_fp(struct memphy_struct *mp, int fpn)
+{
+   struct framephy_struct *fp = mp->used_fp_list;
+   struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
+
+   /* Create new node with value fpn */
+   newnode->fpn = fpn;
+   newnode->fp_next = fp;
+   mp->used_fp_list = newnode;
+   
+   return 0;
+}
+
 //#endif

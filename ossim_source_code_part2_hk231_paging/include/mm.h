@@ -139,6 +139,7 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn);
 int MEMPHY_read(struct memphy_struct * mp, int addr, BYTE *value);
 int MEMPHY_write(struct memphy_struct * mp, int addr, BYTE data);
 int MEMPHY_dump(struct memphy_struct * mp);
+int MEMPHY_put_fp(struct memphy_struct *mp, int fpn);
 int init_memphy(struct memphy_struct *mp, int max_size, int randomflg);
 /* DEBUG */
 int print_list_fp(struct framephy_struct *fp);
