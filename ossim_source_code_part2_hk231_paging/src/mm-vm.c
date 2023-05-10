@@ -25,6 +25,7 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   // check if the new region is valid
   if (rg_elmt.rg_start >= rg_elmt.rg_end)
     return -1;
+  pthread_mutex_lock(&mutex);
   // malloc the new region
   struct vm_rg_struct *rg = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
   rg->rg_start = rg_elmt.rg_start;
@@ -39,7 +40,7 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   /* Enlist the new region */
   // update the new region
   mm->mmap->vm_freerg_list = rg;
-  // put frame to the free list
+  pthread_mutex_unlock(&mutex);
 
 #ifdef VMDBG
     printf("----------------------------------------------\n");
@@ -424,6 +425,9 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
     return -1; /* invalid page access */
 
   int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
+  #ifdef TEST
+  printf("addr = %d, fpn = %d, off = %d, phyaddr = %d\n", addr,fpn, off, phyaddr);
+  #endif
 
   MEMPHY_read(caller->mram,phyaddr, data);
 
@@ -447,6 +451,9 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
     return -1; /* invalid page access */
 
   int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
+  #ifdef TEST
+  printf("addr = %d, fpn = %d, off = %d, phyaddr = %d\n", addr,fpn, off, phyaddr);
+  #endif
 
   MEMPHY_write(caller->mram,phyaddr, value);
 
@@ -463,13 +470,6 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
  */
 int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
 {
-  #ifdef TEST
-  printf("------------------\n");
-  printf("BEFORE READ\n");
-  printf("------------------\n");
-  printf("used_fp_list:\n");
-  print_list_fp(caller->mram->used_fp_list);
-  #endif
   struct vm_rg_struct *currg = get_symrg_byid(caller->mm, rgid);
 
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
@@ -521,13 +521,6 @@ int pgread(
  */
 int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 {
-  #ifdef TEST
-  printf("------------------\n");
-  printf("BEFORE WRITE\n");
-  printf("------------------\n");
-  printf("used_fp_list:\n");
-  print_list_fp(caller->mram->used_fp_list);
-  #endif
   struct vm_rg_struct *currg = get_symrg_byid(caller->mm, rgid);
 
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);

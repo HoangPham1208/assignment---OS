@@ -7,7 +7,9 @@
 #include "mm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
 
+pthread_mutex_t mem_lock = PTHREAD_MUTEX_INITIALIZER;
 /* 
  * init_pte - Initialize PTE entry
  */
@@ -56,7 +58,6 @@ int pte_set_swap(uint32_t *pte, int swptyp, int swpoff)
 
   SETVAL(*pte, swptyp, PAGING_PTE_SWPTYP_MASK, PAGING_PTE_SWPTYP_LOBIT);
   SETVAL(*pte, swpoff, PAGING_PTE_SWPOFF_MASK, PAGING_PTE_SWPOFF_LOBIT);
-
   return 0;
 }
 
@@ -71,7 +72,6 @@ int pte_set_fpn(uint32_t *pte, int fpn)
   CLRBIT(*pte, PAGING_PTE_SWAPPED_MASK);
 
   SETVAL(*pte, fpn, PAGING_PTE_FPN_MASK, PAGING_PTE_FPN_LOBIT); 
-
   return 0;
 }
 
@@ -98,11 +98,13 @@ int vmap_page_range(struct pcb_t *caller, // process call
    *      in page table caller->mm->pgd[]
    */
   for(; pgit < pgnum; pgit++){
+    pthread_mutex_lock(&mem_lock);
     int temp = addr + pgit*PAGING_PAGESZ;
     fpn = fpit->fpn;
     pte_set_fpn(&caller->mm->pgd[PAGING_PGN(temp)], fpn);
     enlist_pgn_node(&caller->mm->fifo_pgn, PAGING_PGN(temp));
     fpit = fpit->fp_next; 
+    pthread_mutex_unlock(&mem_lock);
   }
 
    /* Tracking for later page replacement activities (if needed)
@@ -124,7 +126,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
   struct framephy_struct *newfp_str;
 
   for(pgit = 0; pgit < req_pgnum; pgit++)
-  {
+  { pthread_mutex_lock(&mem_lock);
     if(MEMPHY_get_freefp(caller->mram, &fpn) == 0)
    {
       //checking
@@ -190,6 +192,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
         *frm_lst = newfp_str;
       }
     } 
+    pthread_mutex_unlock(&mem_lock);
  }
 
 

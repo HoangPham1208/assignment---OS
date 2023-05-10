@@ -18,6 +18,7 @@ pthread_mutex_t memphy_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 int MEMPHY_mv_csr(struct memphy_struct *mp, int offset)
 {
+   pthread_mutex_lock(&memphy_lock);
    int numstep = 0;
 
    mp->cursor = 0;
@@ -26,7 +27,7 @@ int MEMPHY_mv_csr(struct memphy_struct *mp, int offset)
      mp->cursor = (mp->cursor + 1) % mp->maxsz;
      numstep++;
    }
-
+   pthread_mutex_unlock(&memphy_lock);
    return 0;
 }
 
@@ -38,15 +39,15 @@ int MEMPHY_mv_csr(struct memphy_struct *mp, int offset)
  */
 int MEMPHY_seq_read(struct memphy_struct *mp, int addr, BYTE *value)
 {
+   pthread_mutex_lock(&memphy_lock);
    if (mp == NULL)
      return -1;
 
    if (!mp->rdmflg)
      return -1; /* Not compatible mode for sequential read */
-
    MEMPHY_mv_csr(mp, addr);
    *value = (BYTE) mp->storage[addr];
-
+   pthread_mutex_unlock(&memphy_lock);
    return 0;
 }
 
@@ -58,9 +59,11 @@ int MEMPHY_seq_read(struct memphy_struct *mp, int addr, BYTE *value)
  */
 int MEMPHY_read(struct memphy_struct * mp, int addr, BYTE *value)
 {
+   #ifdef TEST
+   printf("mp->storage[%d] = %d\n",addr,mp->storage[addr]);
+   #endif
    if (mp == NULL)
      return -1;
-
    if (mp->rdmflg)
       *value = mp->storage[addr];
    else /* Sequential access device */
@@ -77,15 +80,15 @@ int MEMPHY_read(struct memphy_struct * mp, int addr, BYTE *value)
  */
 int MEMPHY_seq_write(struct memphy_struct * mp, int addr, BYTE value)
 {
-
+   pthread_mutex_lock(&memphy_lock);
    if (mp == NULL)
      return -1;
-
    if (!mp->rdmflg)
      return -1; /* Not compatible mode for sequential read */
 
    MEMPHY_mv_csr(mp, addr);
    mp->storage[addr] = value;
+   pthread_mutex_unlock(&memphy_lock);
 
    return 0;
 }
@@ -98,6 +101,9 @@ int MEMPHY_seq_write(struct memphy_struct * mp, int addr, BYTE value)
  */
 int MEMPHY_write(struct memphy_struct * mp, int addr, BYTE data)
 {
+   #ifdef TEST
+   printf("mp->storage[%d] = %d\n",addr,mp->storage[addr]);
+   #endif
    if (mp == NULL)
      return -1;
 
@@ -129,6 +135,7 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
     mp->free_fp_list = fst;
 
     /* We have list with first element, fill in the rest num-1 element member*/
+    pthread_mutex_lock(&memphy_lock);
     for (iter = 1; iter < numfp ; iter++)
     {
        newfst =  malloc(sizeof(struct framephy_struct));
@@ -138,11 +145,13 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
        fst = newfst;
     }
 
+    pthread_mutex_unlock(&memphy_lock);
     return 0;
 }
 
 int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 {
+   pthread_mutex_lock(&memphy_lock);
    struct framephy_struct *fp = mp->free_fp_list;
 
    if (fp == NULL)
@@ -157,6 +166,7 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
    
 
    free(fp);
+   pthread_mutex_unlock(&memphy_lock);
 
    return 0;
 }
@@ -181,6 +191,7 @@ int MEMPHY_dump(struct memphy_struct * mp)
 
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 {
+   pthread_mutex_lock(&memphy_lock);
    struct framephy_struct *fp = mp->free_fp_list;
    struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
 
@@ -188,7 +199,7 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
    newnode->fpn = fpn;
    newnode->fp_next = fp;
    mp->free_fp_list = newnode;
-
+   pthread_mutex_unlock(&memphy_lock);
    return 0;
 }
 
@@ -213,6 +224,7 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 
 int MEMPHY_put_fp(struct memphy_struct *mp, int fpn)
 {
+   pthread_mutex_lock(&memphy_lock);
    struct framephy_struct *fp = mp->used_fp_list;
    struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
 
@@ -220,7 +232,7 @@ int MEMPHY_put_fp(struct memphy_struct *mp, int fpn)
    newnode->fpn = fpn;
    newnode->fp_next = fp;
    mp->used_fp_list = newnode;
-   
+   pthread_mutex_unlock(&memphy_lock);
    return 0;
 }
 
