@@ -25,7 +25,9 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   // check if the new region is valid
   if (rg_elmt.rg_start >= rg_elmt.rg_end)
     return -1;
+  #ifdef SYNC
   pthread_mutex_lock(&mutex);
+  #endif
   // malloc the new region
   struct vm_rg_struct *rg = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
   rg->rg_start = rg_elmt.rg_start;
@@ -40,7 +42,9 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   /* Enlist the new region */
   // update the new region
   mm->mmap->vm_freerg_list = rg;
+  #ifdef SYNC
   pthread_mutex_unlock(&mutex);
+  #endif
 
 #ifdef VMDBG
     printf("----------------------------------------------\n");
@@ -417,6 +421,9 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
   int pgn = PAGING_PGN(addr);
   int off = PAGING_OFFST(addr);
   int fpn;
+  #ifdef TEST
+  printf("pgn = %d, off = %d\n", pgn, off);
+  #endif
   #ifdef VMDBG
   printf("This is page number: %d\n", pgn);
   #endif
@@ -445,6 +452,9 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
   int pgn = PAGING_PGN(addr);
   int off = PAGING_OFFST(addr);
   int fpn;
+  #ifdef TEST
+  printf("pgn = %d, off = %d\n", pgn, off);
+  #endif
 
   /* Get the page to MEMRAM, swap from MEMSWAP if needed */
   if(pg_getpage(mm, pgn, &fpn, caller) != 0) 

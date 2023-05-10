@@ -18,7 +18,9 @@ pthread_mutex_t memphy_lock = PTHREAD_MUTEX_INITIALIZER;
  */
 int MEMPHY_mv_csr(struct memphy_struct *mp, int offset)
 {
+   #ifdef SYNC
    pthread_mutex_lock(&memphy_lock);
+   #endif
    int numstep = 0;
 
    mp->cursor = 0;
@@ -27,7 +29,9 @@ int MEMPHY_mv_csr(struct memphy_struct *mp, int offset)
      mp->cursor = (mp->cursor + 1) % mp->maxsz;
      numstep++;
    }
+   #ifdef SYNC
    pthread_mutex_unlock(&memphy_lock);
+   #endif
    return 0;
 }
 
@@ -39,7 +43,9 @@ int MEMPHY_mv_csr(struct memphy_struct *mp, int offset)
  */
 int MEMPHY_seq_read(struct memphy_struct *mp, int addr, BYTE *value)
 {
+   #ifdef SYNC
    pthread_mutex_lock(&memphy_lock);
+   #endif
    if (mp == NULL)
      return -1;
 
@@ -47,7 +53,11 @@ int MEMPHY_seq_read(struct memphy_struct *mp, int addr, BYTE *value)
      return -1; /* Not compatible mode for sequential read */
    MEMPHY_mv_csr(mp, addr);
    *value = (BYTE) mp->storage[addr];
+
+   #ifdef SYNC
    pthread_mutex_unlock(&memphy_lock);
+   #endif
+   
    return 0;
 }
 
@@ -80,7 +90,9 @@ int MEMPHY_read(struct memphy_struct * mp, int addr, BYTE *value)
  */
 int MEMPHY_seq_write(struct memphy_struct * mp, int addr, BYTE value)
 {
+   #ifdef SYNC
    pthread_mutex_lock(&memphy_lock);
+   #endif
    if (mp == NULL)
      return -1;
    if (!mp->rdmflg)
@@ -88,7 +100,9 @@ int MEMPHY_seq_write(struct memphy_struct * mp, int addr, BYTE value)
 
    MEMPHY_mv_csr(mp, addr);
    mp->storage[addr] = value;
+   #ifdef SYNC
    pthread_mutex_unlock(&memphy_lock);
+   #endif
 
    return 0;
 }
@@ -135,7 +149,9 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
     mp->free_fp_list = fst;
 
     /* We have list with first element, fill in the rest num-1 element member*/
+    #ifdef SYNC
     pthread_mutex_lock(&memphy_lock);
+      #endif
     for (iter = 1; iter < numfp ; iter++)
     {
        newfst =  malloc(sizeof(struct framephy_struct));
@@ -145,13 +161,17 @@ int MEMPHY_format(struct memphy_struct *mp, int pagesz)
        fst = newfst;
     }
 
+      #ifdef SYNC
     pthread_mutex_unlock(&memphy_lock);
+      #endif
     return 0;
 }
 
 int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 {
+   #ifdef SYNC
    pthread_mutex_lock(&memphy_lock);
+   #endif
    struct framephy_struct *fp = mp->free_fp_list;
 
    if (fp == NULL)
@@ -166,7 +186,9 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
    
 
    free(fp);
+   #ifdef SYNC
    pthread_mutex_unlock(&memphy_lock);
+   #endif
 
    return 0;
 }
@@ -191,7 +213,9 @@ int MEMPHY_dump(struct memphy_struct * mp)
 
 int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
 {
+   #ifdef SYNC
    pthread_mutex_lock(&memphy_lock);
+   #endif
    struct framephy_struct *fp = mp->free_fp_list;
    struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
 
@@ -199,7 +223,9 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
    newnode->fpn = fpn;
    newnode->fp_next = fp;
    mp->free_fp_list = newnode;
+   #ifdef SYNC
    pthread_mutex_unlock(&memphy_lock);
+   #endif
    return 0;
 }
 
@@ -224,7 +250,9 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
 
 int MEMPHY_put_fp(struct memphy_struct *mp, int fpn)
 {
+   #ifdef SYNC
    pthread_mutex_lock(&memphy_lock);
+   #endif
    struct framephy_struct *fp = mp->used_fp_list;
    struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
 
@@ -232,7 +260,9 @@ int MEMPHY_put_fp(struct memphy_struct *mp, int fpn)
    newnode->fpn = fpn;
    newnode->fp_next = fp;
    mp->used_fp_list = newnode;
+   #ifdef SYNC
    pthread_mutex_unlock(&memphy_lock);
+   #endif
    return 0;
 }
 
