@@ -1,6 +1,6 @@
 
-#ifndef QUEUE_H
-#define QUEUE_H
+// #ifndef QUEUE_H
+// #define QUEUE_H
 
 #include "common.h"
 
@@ -17,5 +17,5 @@ struct pcb_t * dequeue(struct queue_t * q);
 
 int empty(struct queue_t * q);
 
-#endif
+// #endif
 
