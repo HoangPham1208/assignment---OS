@@ -25,9 +25,7 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   // check if the new region is valid
   if (rg_elmt.rg_start >= rg_elmt.rg_end)
     return -1;
-  #ifdef SYNC
   pthread_mutex_lock(&mutex);
-  #endif
   // malloc the new region
   struct vm_rg_struct *rg = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
   rg->rg_start = rg_elmt.rg_start;
@@ -42,9 +40,7 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   /* Enlist the new region */
   // update the new region
   mm->mmap->vm_freerg_list = rg;
-  #ifdef SYNC
   pthread_mutex_unlock(&mutex);
-  #endif
 
 #ifdef VMDBG
     printf("----------------------------------------------\n");
@@ -121,15 +117,15 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     *alloc_addr = rgnode.rg_start;
     #ifdef VMDBG 
     printf("----------------------------------------------\n");
-    printf("alloc has been called when get free region\n");
-    printf("range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
-    printf("VM area: start = %lu, end = %lu\n", caller->mm->mmap->vm_start, caller->mm->mmap->vm_end);
+    printf("Alloc has been called when process can get free region\n");
+    printf("Region range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
+    printf("VM area range: start = %lu, end = %lu\n", caller->mm->mmap->vm_start, caller->mm->mmap->vm_end);
     // Checking the free region list
-    printf("The free region list: \n");
+    printf("Free region list: \n");
     struct vm_rg_struct *it = caller->mm->mmap->vm_freerg_list;
     while (it != NULL)
     {
-      printf("range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
+      printf("Region range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
       it = it->rg_next;
     }
     printf("----------------------------------------------\n");
@@ -142,16 +138,16 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     // print the vma list
     print_list_vma(caller->mm->mmap);
     // print the region are being used
-    printf("The region are being used: \n");
+    printf("Regions are being used: \n");
     for(int it = 0 ; it < PAGING_MAX_SYMTBL_SZ; it++){
       if(caller->mm->symrgtbl[it].rg_start == 0 && caller->mm->symrgtbl[it].rg_end == 0){
         continue;
       }
-      printf("range id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
+      printf("Region id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
     }
     printf("\n");
     // print the free region list
-    printf("The free region list: \n");
+    printf("Free region list: \n");
     print_list_rg(caller->mm->mmap->vm_freerg_list);
     printf("-------------------------\n");
     #endif
@@ -165,15 +161,15 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     *alloc_addr = caller->mm->symrgtbl[rgid].rg_start;
     #ifdef VMDBG 
     printf("----------------------------------------------\n");
-    printf("alloc has been called when sbrk\n");
-    printf("range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
-    printf("VM area: start = %lu, end = %lu\n", caller->mm->mmap->vm_start, caller->mm->mmap->vm_end);
+    printf("Alloc has been called when process can lift up sbrk\n");
+    printf("Region range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
+    printf("VM area range: start = %lu, end = %lu\n", caller->mm->mmap->vm_start, caller->mm->mmap->vm_end);
     // Checking the free region list
-    printf("The free region list: \n");
+    printf("Free region list: \n");
     struct vm_rg_struct *it = caller->mm->mmap->vm_freerg_list;
     while (it != NULL)
     {
-      printf("range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
+      printf("Region range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
       it = it->rg_next;
     }
     printf("----------------------------------------------\n");
@@ -186,22 +182,21 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     // print the vma list
     print_list_vma(caller->mm->mmap);
     // print the region are being used
-    printf("The region are being used:\n");
+    printf("Regions are being used:\n");
     for(int it = 0 ; it < PAGING_MAX_SYMTBL_SZ; it++){
       if(caller->mm->symrgtbl[it].rg_start == 0 && caller->mm->symrgtbl[it].rg_end == 0){
         continue;
       }
-      printf("range id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
+      printf("Region id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
     }
     printf("\n");
     // print the free region list
-    printf("The free region list: \n");
+    printf("Free region list: \n");
     print_list_rg(caller->mm->mmap->vm_freerg_list);
     printf("-------------------------\n");
     #endif
     return 0;
   }
-
 
   /*Attempt to increate limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
@@ -241,15 +236,15 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   #ifdef VMDBG
     printf("----------------------------------------------\n");
 
-  printf("alloc has been called when not get free region\n");
-  printf("range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
-  printf("VM area: start = %lu, end = %lu\n", cur_vma->vm_start, cur_vma->vm_end);
+  printf("Alloc has been called when process must increase area limit\n");
+  printf("Region range: start = %lu, end = %lu\n", caller->mm->symrgtbl[rgid].rg_start, caller->mm->symrgtbl[rgid].rg_end);
+  printf("VM area range: start = %lu, end = %lu\n", cur_vma->vm_start, cur_vma->vm_end);
   // Checking the free region list
-  printf("The free region list: \n");
+  printf("Free region list: \n");
   struct vm_rg_struct *it = cur_vma->vm_freerg_list;
   while (it != NULL)
   {
-    printf("range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
+    printf("Region range: start = %lu, end = %lu\n", it->rg_start, it->rg_end);
     it = it->rg_next;
   }
     printf("----------------------------------------------\n");
@@ -263,12 +258,12 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     // print the vma list
     print_list_vma(caller->mm->mmap);
     // print the region are being used
-    printf("List of region are being used:\n");
+    printf("Regions are being used:\n");
     for(int it = 0 ; it < PAGING_MAX_SYMTBL_SZ; it++){
       if(caller->mm->symrgtbl[it].rg_start == 0 && caller->mm->symrgtbl[it].rg_end == 0){
         continue;
       }
-      printf("range id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
+      printf("Region id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
     }
     printf("\n");
     // print the free region list
@@ -309,7 +304,7 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   enlist_vm_freerg_list(caller->mm, rgnode);
   #ifdef TEST
     printf("-------------------------\n");
-    printf("FREE - range id %d:[%lu, %lu]\n", rgid, rgnode.rg_start, rgnode.rg_end);
+    printf("FREE - Region id %d:[%lu,%lu]\n", rgid, rgnode.rg_start, rgnode.rg_end);
     printf("-------------------------\n");
     printf("\n");
     // print the vma list
@@ -320,11 +315,11 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
       if(caller->mm->symrgtbl[it].rg_start == 0 && caller->mm->symrgtbl[it].rg_end == 0){
         continue;
       }
-      printf("range id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
+      printf("Region id %d : start = %lu, end = %lu\n", it, caller->mm->symrgtbl[it].rg_start, caller->mm->symrgtbl[it].rg_end);
     }
     printf("\n");
     // print the free region list
-    printf("List of free region:\n");
+    printf("Free region list:\n");
     print_list_rg(caller->mm->mmap->vm_freerg_list);
     printf("-------------------------\n");
   #endif
@@ -421,9 +416,6 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
   int pgn = PAGING_PGN(addr);
   int off = PAGING_OFFST(addr);
   int fpn;
-  #ifdef TEST
-  printf("pgn = %d, off = %d\n", pgn, off);
-  #endif
   #ifdef VMDBG
   printf("This is page number: %d\n", pgn);
   #endif
@@ -433,7 +425,10 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
 
   int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
   #ifdef TEST
-  printf("addr = %d, fpn = %d, off = %d, phyaddr = %d\n", addr,fpn, off, phyaddr);
+  printf("----------------------------------------\n");
+  printf("READ CONTENT\n");
+  printf("----------------------------------------\n");
+  printf("VM address = %d, fpn = %d, phyaddr = %d\n", addr,fpn, phyaddr);
   #endif
 
   MEMPHY_read(caller->mram,phyaddr, data);
@@ -452,9 +447,6 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
   int pgn = PAGING_PGN(addr);
   int off = PAGING_OFFST(addr);
   int fpn;
-  #ifdef TEST
-  printf("pgn = %d, off = %d\n", pgn, off);
-  #endif
 
   /* Get the page to MEMRAM, swap from MEMSWAP if needed */
   if(pg_getpage(mm, pgn, &fpn, caller) != 0) 
@@ -462,7 +454,10 @@ int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 
   int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) + off;
   #ifdef TEST
-  printf("addr = %d, fpn = %d, off = %d, phyaddr = %d\n", addr,fpn, off, phyaddr);
+  printf("----------------------------------------\n");
+  printf("WRITE CONTENT\n");
+  printf("----------------------------------------\n");
+  printf("VM addr = %d, fpn = %d, phyaddr = %d\n", addr, fpn, phyaddr);
   #endif
 
   MEMPHY_write(caller->mram,phyaddr, value);
@@ -488,13 +483,7 @@ int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
 	  return -1;
 
   pg_getval(caller->mm, currg->rg_start + offset, data, caller);
-  #ifdef TEST
-  printf("------------------\n");
-  printf("AFTER READ\n");
-  printf("------------------\n");
-  printf("used_fp_list:\n");
-  print_list_fp(caller->mram->used_fp_list);
-  #endif
+  
   return 0;
 }
 
@@ -507,16 +496,24 @@ int pgread(
 		uint32_t destination) 
 {
   BYTE data;
-  int val = __read(proc, 0, source, offset, &data);
 
-  destination = (uint32_t) data;
-#ifdef IODUMP
+  int val = __read(proc, 0, source, offset, &data);
+  #ifdef IODUMP
   printf("read region=%d offset=%d value=%d\n", source, offset, data);
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); //print max TBL
 #endif
-  MEMPHY_dump(proc->mram);
 #endif
+  __write(proc, 0, destination, 0, data);
+
+#ifdef TEST
+  printf("------------------\n");
+  printf("AFTER READ\n");
+  printf("------------------\n");
+  printf("List of used frame:\n");
+  print_list_fp(proc->mram->used_fp_list);
+#endif
+  MEMPHY_dump(proc->mram);
 
   return val;
 }
@@ -539,15 +536,6 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 	  return -1;
 
   pg_setval(caller->mm, currg->rg_start + offset, value, caller);
-  #ifdef TEST
-  printf("------------------\n");
-  printf("AFTER WRITE\n");
-  printf("------------------\n");
-  printf("used_fp_list:\n");
-  print_list_fp(caller->mram->used_fp_list);
-  #endif
-
-
   return 0;
 }
 
@@ -558,15 +546,22 @@ int pgwrite(
 		uint32_t destination, // Index of destination register
 		uint32_t offset)
 {
+  int val = __write(proc, 0, destination, offset, data);
 #ifdef IODUMP
   printf("write region=%d offset=%d value=%d\n", destination, offset, data);
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); //print max TBL
 #endif
+#ifdef TEST
+  printf("------------------\n");
+  printf("AFTER WRITE\n");
+  printf("------------------\n");
+  printf("used_fp_list:\n");
+  print_list_fp(proc->mram->used_fp_list);
+#endif
   MEMPHY_dump(proc->mram);
 #endif
-
-  return __write(proc, 0, destination, offset, data);
+  return val;
 }
 
 
@@ -655,12 +650,10 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
  */
 int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 {
-  struct vm_rg_struct * newrg = malloc(sizeof(struct vm_rg_struct));
   int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
   int incnumpage =  inc_amt / PAGING_PAGESZ;
   struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
-
   int old_end = cur_vma->vm_end;
 
   /*Validate overlap of obtained region */
@@ -675,8 +668,8 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
     cur_vma->vm_freerg_list = NULL;
   }
   cur_vma->vm_end += inc_sz;
-  if (vm_map_ram(caller, area->rg_start, area->rg_end, 
-                    old_end, incnumpage , newrg) < 0)
+  if (vm_map_ram(caller, cur_vma->vm_start, cur_vma->vm_end, 
+                    old_end, incnumpage , area) < 0)
     return -1; /* Map the memory to MEMRAM */
 
   return 0;
