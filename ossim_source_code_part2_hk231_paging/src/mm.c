@@ -90,25 +90,18 @@ int vmap_page_range(struct pcb_t *caller, // process call
   int  fpn;
   int pgit = 0;
 
-  ret_rg->rg_end = ret_rg->rg_start = addr; // at least the very first space is usable
-
-
   /* TODO map range of frame to address space 
    *      [addr to addr + pgnum*PAGING_PAGESZ
    *      in page table caller->mm->pgd[]
    */
   for(; pgit < pgnum; pgit++){
-    #ifdef SYNC
     pthread_mutex_lock(&mem_lock);
-    #endif
     int temp = addr + pgit*PAGING_PAGESZ;
     fpn = fpit->fpn;
     pte_set_fpn(&caller->mm->pgd[PAGING_PGN(temp)], fpn);
     enlist_pgn_node(&caller->mm->fifo_pgn, PAGING_PGN(temp));
     fpit = fpit->fp_next; 
-    #ifdef SYNC
     pthread_mutex_unlock(&mem_lock);
-    #endif
   }
 
    /* Tracking for later page replacement activities (if needed)
@@ -130,10 +123,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
   struct framephy_struct *newfp_str;
 
   for(pgit = 0; pgit < req_pgnum; pgit++)
-  { 
-    #ifdef SYNC
-    pthread_mutex_lock(&mem_lock);
-    #endif
+  { pthread_mutex_lock(&mem_lock);
     if(MEMPHY_get_freefp(caller->mram, &fpn) == 0)
    {
       //checking
@@ -199,9 +189,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
         *frm_lst = newfp_str;
       }
     } 
-    #ifdef SYNC
     pthread_mutex_unlock(&mem_lock);
-    #endif
  }
 
 
@@ -223,7 +211,6 @@ int vm_map_ram(struct pcb_t *caller, int astart, int aend, int mapstart, int inc
   struct framephy_struct *frm_lst = NULL;
   int ret_alloc;
   
-
   /*@bksysnet: author provides a feasible solution of getting frames
    *FATAL logic in here, wrong behaviour if we have not enough page
    *i.e. we request 1000 frames meanwhile our RAM has size of 3 frames
